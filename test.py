@@ -69,3 +69,10 @@ print("\nCursuri noi ", no_cursuri_noi)
 
 null_count = df_dev_fin.isnull()
 
+
+
+cols_numerice = df_dev_fin.select_dtypes(include=['number']).columns
+cols_numerice = cols_numerice.drop(["course_id"])
+
+print(cols_numerice)
+
