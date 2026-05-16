@@ -765,9 +765,9 @@ elif sectiune == "Modelele de Regresie Multiplă":
 
         fig_train, ax_train = plt.subplots(figsize=(6, 4))
         ax_train.scatter(y_predicted_train, y_train, alpha=0.5, color="blue")
-        ax_train.set_xlabel('num_subscribers prognozat')
-        ax_train.set_ylabel('num_subscribers real')
-        ax_train.set_title(f'Comparație între num_subscribers prognozat și cel real')
+        ax_train.set_xlabel('Număr abonați prognozat')
+        ax_train.set_ylabel('Număr abonați real')
+        ax_train.set_title(f'Comparație între număr de abonați prognozat și cel real pentru setul de antrenare')
 
         min_val, max_val = float(y_train.min()), float(y_train.max())
         ax_train.plot([min_val, max_val], [min_val, max_val], color="red", linestyle="--")
@@ -779,9 +779,9 @@ elif sectiune == "Modelele de Regresie Multiplă":
 
         fig_test, ax_test = plt.subplots(figsize=(6, 4))
         ax_test.scatter(y_predicted_test, y_test, alpha=0.5, color="green")
-        ax_test.set_xlabel('Predicted Subscribers (Log Scale)')
-        ax_test.set_ylabel('Actual Subscribers (Log Scale)')
-        ax_test.set_title(f'Comparing Predicted and Actual ({nume_piata} - Test)')
+        ax_test.set_xlabel('Număr abonați prognozat')
+        ax_test.set_ylabel('Număr abonați real')
+        ax_test.set_title(f'Comparație între număr de abonați prognozat și cel real pentru setul de test')
         ax_test.plot([min_val, max_val], [min_val, max_val], color="red", linestyle="--")
 
 
@@ -819,6 +819,68 @@ elif sectiune == "Modelele de Regresie Multiplă":
     Spre deosebire de piața cursuilor normale, în piața virală predicțiile, atât cele de train, cât și de test, sunt mai bune, deci
       Modelul reușește cu succes să facă diferența între un curs viral „mai mic” (care are în jur de 15.000 de abonați) și un curs foarte viral (care trece de 150.000 de abonați). Predicțiile au varianță și urmează realitatea. 
       Comparativ cu piața normală, erorile s-au înjumătățit.
+    """)
+
+
+
+    from sklearn.cluster import KMeans
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    import numpy as np
+
+
+
+    X = df_norm_scaled[X_cols].astype(float).values
+
+    wcss = []
+    for i in range(1, 11):
+        kmeans = KMeans(n_clusters=i, init='k-means++', random_state=42)
+        kmeans.fit(X)
+        wcss.append(kmeans.inertia_)
+
+    st.write("1. Determinarea numărului optim de clustere")
+    fig_elbow, ax_elbow = plt.subplots(figsize=(10, 5))
+    sns.lineplot(x=range(1, 11), y=wcss, marker='o', color='red', ax=ax_elbow)
+    ax_elbow.set_title('Metoda Cotului')
+    ax_elbow.set_xlabel('Număr clustere')
+    ax_elbow.set_ylabel('WCSS')
+    st.pyplot(fig_elbow)
+
+    num_clustere_ales = 4
+    kmeans = KMeans(n_clusters=num_clustere_ales, init='k-means++', random_state=42)
+    y_kmeans = kmeans.fit_predict(X)
+
+    index_reviews = X_cols.index('num_reviews')
+    index_age = X_cols.index('course_age_days')
+
+    st.write(f"2. Vizualizarea Clusterelor (K = {num_clustere_ales})")
+    fig_scatter, ax_scatter = plt.subplots(figsize=(15, 7))
+
+    sns.scatterplot(x=X[y_kmeans == 0, index_reviews], y=X[y_kmeans == 0, index_age], color='yellow',
+                    label='Cluster 1', s=50, ax=ax_scatter)
+    sns.scatterplot(x=X[y_kmeans == 1, index_reviews], y=X[y_kmeans == 1, index_age], color='blue',
+                    label='Cluster 2', s=50, ax=ax_scatter)
+    sns.scatterplot(x=X[y_kmeans == 2, index_reviews], y=X[y_kmeans == 2, index_age], color='green',
+                    label='Cluster 3', s=50, ax=ax_scatter)
+    sns.scatterplot(x=X[y_kmeans == 3, index_reviews], y=X[y_kmeans == 3, index_age], color='cyan',
+                    label='Cluster 4', s=50, ax=ax_scatter)
+
+
+    sns.scatterplot(x=kmeans.cluster_centers_[:, index_reviews], y=kmeans.cluster_centers_[:, index_age],
+                    color='red',
+                    label='Centroids', s=300, marker=',', ax=ax_scatter)
+
+    ax_scatter.grid(False)
+    ax_scatter.set_title('Clusters of Courses')
+    ax_scatter.set_xlabel('Number of Reviews (Standardized)')
+    ax_scatter.set_ylabel('Course Age in Days (Standardized)')
+    ax_scatter.legend()
+    st.pyplot(fig_scatter)
+
+    st.markdown("""
+    **Cluster-ul galben** reprezintă cursurile care sunt de mult timp pe piață, dar au puține review-uri.
+    **Clusterele albastru și verde** reprezintă cursurile relativ noi, care nu au reușit să capete încă vizibilitate.
+    **Cluster-ul turcoaz** reprezintă cursurile foarte populare. Nu toate sunt cursuri vechi, însă acestea au explodat din punct de vedere al interacțiunii din partea utilizatorilor.
     """)
 
 
