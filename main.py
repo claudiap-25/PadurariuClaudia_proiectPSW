@@ -29,8 +29,6 @@ if 'X_cols' not in st.session_state:
     st.session_state['X_cols'] = []
 
 
-
-# Am schimbat coloana 'published_timestamp' intr-un tip de data cu care voi putea lucra mai incolo
 df_dev_fin['published_timestamp'] = pd.to_datetime(df_dev_fin['published_timestamp'])
 df_dev_fin['year_published'] = df_dev_fin['published_timestamp'].dt.year
 
@@ -50,7 +48,7 @@ comparând domeniile cele mai întâlnite în setul de date: **Web Development**
 """)
 
 
-sectiune = st.sidebar.radio("Secțiuni:", ["Introducere și date inițiale", "Analiza exploratorie a seturilor de date", "Modelele de Regresie Multiplă"], key="sidebar_radio")
+sectiune = st.sidebar.radio("Secțiuni:", ["Introducere și date inițiale", "Analiza exploratorie a seturilor de date", "Machine Learning"], key="sidebar_radio")
 
 if sectiune == "Introducere și date inițiale":
 
@@ -69,15 +67,11 @@ if sectiune == "Introducere și date inițiale":
 elif sectiune == "Analiza exploratorie a seturilor de date":
     st.header("Analiza exploratorie")
 
-
-
-
     # -------------- Curățarea datelor --------------
 
     # Tratarea valorilor null sau care ai putea distorsiona rezultatele
 
-
-
+    st.subheader("Curățarea datelor")
     st.subheader("Valorile null")
     null_count = df_dev_fin.isnull().sum().sum()
     # print(null_count)
@@ -87,14 +81,14 @@ elif sectiune == "Analiza exploratorie a seturilor de date":
         df_nulls = df_dev_fin[df_dev_fin.isnull()]
         st.dataframe(df_nulls)
 
-        st.warning(f"În setul de date există {null_count} valori lipsă. Rândurile care conțin aceste valori lipsă au fost eliminate.")
+        st.warning(f"În setul de date există {null_count} valori lipsă.")
         df_dev_fin = df_dev_fin.dropna()
     else:
         st.info("Nu există valori null în setul de date.")
 
 
 
-
+    # Tratarea valorilor invalide
 
     st.subheader("Valori invalide")
 
@@ -102,7 +96,6 @@ elif sectiune == "Analiza exploratorie a seturilor de date":
     cols_numerice = cols_numerice.drop(["course_id", "year_published"])
 
     count_zeros = (df_dev_fin[cols_numerice] == 0).sum()
-
     df_zeros = pd.DataFrame({
         'Coloană': count_zeros.index,
         'Zerouri': count_zeros.values
@@ -111,9 +104,7 @@ elif sectiune == "Analiza exploratorie a seturilor de date":
     df_zeros = df_zeros[df_zeros['Zerouri'] > 0].sort_values('Zerouri', ascending=False)
 
     fig_zeros, ax_zeros = plt.subplots(figsize=(8, 4))
-
     sns.barplot(data=df_zeros, y='Coloană', x='Zerouri', palette='Oranges_r', ax=ax_zeros)
-
     ax_zeros.set_title('Numarul celulelor cu valoarea 0 pentru fiecare coloană')
     ax_zeros.set_xlabel('Număr')
     ax_zeros.set_ylabel('Coloană')
@@ -145,8 +136,6 @@ elif sectiune == "Analiza exploratorie a seturilor de date":
 
 
 
-
-
     # Tratarea cursurilor care sunt prea noi si au numar foarte mic de abonati
     # ultima_data = df_dev_fin['published_timestamp'].max()
     # prag_timp = ultima_data - pd.Timedelta(days=180)
@@ -166,6 +155,9 @@ elif sectiune == "Analiza exploratorie a seturilor de date":
     # else:
     #     st.info("Nu au fost găsite cursuri noi cu 0 abonați care să necesite eliminare.")
 
+
+    # Tratarea duplicatelor
+    st.subheader("Tratarea duplicatelor")
     duplicate_count = df_dev_fin.duplicated(subset=['course_id']).sum()
     df_duplicate = df_dev_fin[df_dev_fin.duplicated(subset=['course_id'], keep=False)].sort_values('course_id')
 
@@ -180,10 +172,8 @@ elif sectiune == "Analiza exploratorie a seturilor de date":
 
 
 
-
-
-
-    st.subheader("Verificarea inconsistențelor")
+    # Verificarea inconsistentelor
+    st.subheader("Tratarea inconsistențelor")
 
     free_but_paid = df_dev_fin[(df_dev_fin['is_paid'] == False) & (df_dev_fin['price'] > 0)]
     no_free_but_paid = len(free_but_paid)
@@ -209,16 +199,9 @@ elif sectiune == "Analiza exploratorie a seturilor de date":
 
 
 
+    st.subheader("Analiza datelor")
 
-
-
-    # Grafice:
-
-
-
-
-
-    # - histograma: - pentru fiecare df specific subiectului si ca variabile pentru variabila prezissa si predictori
+    # Distributia vairabilelor - histograma
     st.subheader("Distribuția Variabilelor numerice: Web Development vs Business Finance")
 
     selected_var = st.selectbox("Alege variabila pentru care vrei să creezi histograma:",
@@ -278,13 +261,13 @@ elif sectiune == "Analiza exploratorie a seturilor de date":
             ax.set_title(f"Distribuția {selected_var} între {interval_slider[0]} și {interval_slider[1]}")
             st.pyplot(fig_corr)
 
-    st.markdown("La o primă vedere se observă că toate histogramele create, cu excepția celei pentru preț au o distribuție puternic asimetrica la drapta."
-        "Prin restrângerea intervalului pentru valoarile variabilei analizate, se observă faptul că cursurile de Business Finance tind să se concentreze"
-        "în zone cu valori mici, cu mult mai puține valori extreme, față de cursurile de Web Development unde valorile sunt mult mai împrăștiate și concentrate pe valori mai depărtate de 0."
-        "De exemplu, pentru numărul de abonați se observă că bara histogramei pentru cursurile cu foarte puțini abonați (mai puțin de 1000) este cu mult mai mare decît cea pentru cursurile de dezvoltare și că numărul cursurilor de dezvoltare tinde să fie mai mare pentru numerele mai mari de abonați."
-        "Dacă restrângem histograma la valori foarte mari, vom regăsi numai cursuri de dezvoltare Web."
-        "Asemănător se întâmplă pentru toate celălalte variabile asimetric distribuite."
-        "În ceea ce privește numărul de abonați și numărul de recenzii, această parituclaritate a histogramelor arată că sunt mai mulți utilizatori care caută și manifestă interes față de cursuril de Web Development decăt pentru cele de Finance."
+    st.markdown("La o primă vedere se observă că toate histogramele create, cu excepția celei pentru preț au o distribuție **puternic asimetrică la drapta**. "
+        "Prin restrângerea intervalului pentru valoarile variabilei analizate, se observă faptul că cursurile de **Business Finance tind să se concentreze "
+        "în zone cu valori mici, având mult mai puține valori extreme** față de cursurile de **Web Development unde valorile sunt mult mai împrăștiate și concentrate pe valori mai depărtate de 0.** "
+        "De exemplu, pentru numărul de abonați se observă că bara histogramei pentru cursurile cu foarte puțini abonați (mai puțin de 1000) este cu mult mai mare decât cea pentru cursurile de dezvoltare. Numărul cursurilor de dezvoltare tinde să fie mai mare pentru numerele mai mari de abonați."
+        "Dacă restrângem histograma la valori foarte mari, vom regăsi numai cursuri de dezvoltare Web. "
+        "Asemănător se întâmplă pentru toate celălalte variabile asimetric distribuite. "
+        "În ceea ce privește numărul de abonați și numărul de recenzii, această parituclaritate a histogramelor arată că sunt mai mulți utilizatori care caută și manifestă interes față de cursurile de Web Development decăt pentru cele de Finance. "
         "Din punctul de vedere al duratei cursului și al numărului de lecții dintr-un curs, se poate deduce că cursurile de Finance nu necesistă la fel de mult efort și timp precum cele de programare."
         )
 
@@ -435,8 +418,9 @@ elif sectiune == "Analiza exploratorie a seturilor de date":
 
 
     st.markdown("""
-    Web Development: Predomină cursurile de tip "All Levels" și "Beginner". Acest lucru sugerează că, odată cu dezvoltarea tehnologiei, oamenilor le-a fost sporit interesul pentru cunoașterea acestui domeniu, eventual orientare profesională, și atunci aceștia se îndreaptă cătrec cursurile introductive sau potivite pentru toate nivelele de cunoștințe.
-    Business Finance: Predomină și aici cursurile de tip "All Levels" și "Beginner", însă la acestea se adaugă și nivelul de "Expert". Acest lucru sugerează faptul că utilizatorii din domeniul de finanțe sunt mai interesați să aprofundeze cunoștințele sau să se specializeze.
+    **Concluzii**
+    - **Web Development**: Predomină cursurile de tip "All Levels" și "Beginner". Acest lucru sugerează că, odată cu dezvoltarea tehnologiei, oamenilor le-a fost sporit interesul pentru cunoașterea acestui domeniu, eventual orientare profesională, și atunci aceștia se îndreaptă cătrec cursurile introductive sau potivite pentru toate nivelele de cunoștințe.
+    - **Business Finance**: Predomină și aici cursurile de tip "All Levels" și "Beginner", însă la acestea se adaugă și nivelul de "Expert". Acest lucru sugerează faptul că utilizatorii din domeniul de finanțe sunt mai interesați să aprofundeze cunoștințele sau să se specializeze.
     """)
 
 
@@ -447,7 +431,7 @@ elif sectiune == "Analiza exploratorie a seturilor de date":
 
     var_x = st.selectbox("Alege variabila pentru axa X:", ['price', 'content_duration', 'num_reviews'])
     var_y = 'num_subscribers'
-    st.subheader(f"Scatter plot pentru: {var_x} vs {var_y}")
+    st.write(f"**Scatter plot pentru: {var_x} vs {var_y}**")
 
     col1_iqr, col2_iqr = st.columns(2)
 
@@ -469,18 +453,18 @@ elif sectiune == "Analiza exploratorie a seturilor de date":
         st.pyplot(fig_fin)
 
     st.markdown("""
-    - Relația dintre numărul de abonați și prețul cursului: Atât pentru Business Finance, cât și pentru Web Development se observă
+    - **_Relația dintre numărul de abonați și prețul cursului_**: Atât pentru Business Finance, cât și pentru Web Development se observă
     faptul că există o oarecare pantă negativă. Majoritatea cursurilor se aglomerează în intervalul de preț 0 - 60$ și multe au un număr destul de mare de abonați.
     Pentru cursurile gratis se disting outlieri deosebiți, cursuri cu peste 100.000 de mii de abonați și chiar peste 250.000 pentru Web Development
     și cursuri cu peste 10.000 de abonați și chiar peste 60.000 pentru cursurile de Finance. Ca o concluzie, pe piața cursurilor online, cursurile care sunt gratuite sunt mult mai atractive și mai achiziționate.
     De remarcat este faptul că și zona cu prețul cuprins între 175 și 200 prezintp cursuri cu un număr crescut de abonați, în mode special cele apropiate de 200.
     Ele pot fi cursuri care complexe, care deși au un preț mare, sunt apreciate de cumpărători.
-    - Relația dintre numărul de abonați și durata în ore:
+    - **_Relația dintre numărul de abonați și durata în ore_**:
     Se observă clar faptul că pe măsură ce durata cursului crește, numărul de abonați scade. Acest lucru este de așteptat considerând că un curs mult mai lung necesită mult mai multă implicare.
     Existp foarte multe cursuri concentarre între 0 și 20 ore pentru development, iar această secțiune include și cursurile putlier cu număr deosebit de mare de abonați.
     După 30 de ore, numărul de abonați scade brusc, existând totuși câteva excepții, precum cursul de aproximativ 40 de ore care are aprocimativ 125.000 de abonați.
     Șa finanțe, intervalul concentrării se reduce la 0-5 ore, iar după pragul de 15 ore, variabila scade aproape spre 0. Comparativ cu dev, piața cursurilor de business este și mai rezistentă la cursurile de lungă durată.
-    - Relația dintre numărul de abonați și num[rul de recenzii:
+    - **_Relația dintre numărul de abonați și numărul de recenzii_**:
     Se observă că cu cât există mai multe review-uri, cu atât există mai mulți abonați (relație pozitivă), adică oamenii se bazează faoarte mult pe acest indicator social atunci când decid cumpărarea unui curs.
     Atât pentru dev, cât și pentru fin rezultatele sunt aglomerate în colțul din stânga sus, adică sunt multe cursuri cu popularitate mică,
     iar cursurile cu popularitate mare sunt împrăștiate. Interesant este câ acel curs viral de Web Development,
@@ -576,10 +560,11 @@ elif sectiune == "Analiza exploratorie a seturilor de date":
 
 
 
+    st.divider(width="stretch")
     st.write("Analiza efectuată până acum arată că domeniul de dezvoltare web este mai dezvoltat decât cel al finanțelor de business."
              "Oamenii prezintă un interes general mai crescut pentru programare, iteracțiunea cu astfel de planuri de învățământ este mai mare, iar datele sunt mult mai variate."
              "Din acest motiv, studiul se va concentra în continuare doar pe cursurile din domeniul Web Development și vor fi analizate separat, dar comparativ cursurile normale și cele outlier.")
-    st.write("În următoarele etape vom pregăti seturile de date pentru regresie")
+    st.write("Etapele următoare constau în pregătirea celor două seturi de date (piața normală și piața outlierilor) pentru folosirea acestora în modelul de regresie.")
 
     df_ml = df_web.copy()
 
@@ -632,7 +617,8 @@ elif sectiune == "Analiza exploratorie a seturilor de date":
 
 
     st.subheader("Feature engineering")
-    st.write("Din data publicării putem extrage încă douî informații folositoare, pe lângă anul publicării: vechimea cursului și luna în care acesta a fost publicat.")
+    st.write("Din data publicării putem extrage încă două informații folositoare, pe lângă anul publicării"
+             "(variabilă categorică creată înainte de începerea analizei datelor): **vechimea cursului** și **luna în care acesta a fost publicat**.")
 
     data_maxima = df_ml['published_timestamp'].max()
     df_ml['course_age_days'] = (data_maxima - df_ml['published_timestamp']).dt.days
@@ -645,7 +631,8 @@ elif sectiune == "Analiza exploratorie a seturilor de date":
 
     st.subheader("Codificarea variabilelor categorice (encodarea)")
     st.write(
-        "Transformăm variabilele 'level' și 'month_published' în variabile dummy pentru a le introduce în regresie.")
+        "Pentru variabila categorică 'level' am ales codificarea folsoind One-hot encoding. Aceasta a fost transformată în variabilă dummy "
+        "pentru a o introduce în regresie și a vedea dacă nivelul de dificultate are impact asupra numărului de abonați")
 
     df_ml_encoded = pd.get_dummies(df_ml, columns=['level'], drop_first=True, dtype=int)
 
@@ -674,6 +661,10 @@ elif sectiune == "Analiza exploratorie a seturilor de date":
     scaler_viral = StandardScaler()
     df_vir_scaled[cols_to_scale] = scaler_viral.fit_transform(df_ml_piata_virala[cols_to_scale])
 
+    st.write("După encodare, setul de date care va fi folosit pentru ML a fost reîmpărțit în seturile ce reprezintă cele două piețe distincte pentru a include și variabilele encodate.")
+    st.write("Standardizarea a fost aplicată pe coloanele 'price', 'content_duration', 'course_age_days', 'num_reviews', ce reprezintă variabilele independente. "
+             "Numărul de abonați a fost exclus din standardizare deoarece acesta reprezintă variabila țintă care va fi ulterior logaritmată.")
+
     X_cols = [col for col in df_norm_scaled.columns if col not in [
         'course_id', 'course_title', 'url', 'published_timestamp',
         'num_subscribers', 'subject', 'year_published'
@@ -684,7 +675,7 @@ elif sectiune == "Analiza exploratorie a seturilor de date":
     st.session_state['X_cols'] = X_cols
 
 
-elif sectiune == "Modelele de Regresie Multiplă":
+elif sectiune == "Machine Learning":
 
     st.header("Modelele de Regresie")
 
@@ -692,14 +683,16 @@ elif sectiune == "Modelele de Regresie Multiplă":
     df_vir_scaled = st.session_state['df_vir_scaled']
     X_cols = st.session_state['X_cols']
 
+    st.write("Odată ce seturile de date au fost corectate și pregătite, acestea pot fi folosite pentru a genera modelele OLS de regresie multiplă "
+             "pentru a vedea cum și în ce măsură influențează fiecare variabilă numărul de abonați pentru cursurile de Web Development de pe Udemy pe cele două piețe distincte (normală și virală).")
+
 
 
     st.subheader("1. Rezumat Regresie - Piața Normală")
 
     X_normal = df_norm_scaled[X_cols].astype(float)
-    X_normal = sm.add_constant(X_normal)  # Adăugăm constanta (Intercept)
+    X_normal = sm.add_constant(X_normal)
 
-    # Logaritmăm variabila țintă exact aici
     y_normal = np.log1p(df_norm_scaled['num_subscribers'].astype(float))
 
     model_normal = sm.OLS(y_normal, X_normal).fit()
@@ -707,7 +700,6 @@ elif sectiune == "Modelele de Regresie Multiplă":
 
 
 
-    # --- REGRESIE: PIAȚA VIRALĂ ---
     st.subheader("2. Rezumat Regresie - Piața Virală")
 
     X_viral = df_vir_scaled[X_cols].astype(float)
@@ -718,7 +710,10 @@ elif sectiune == "Modelele de Regresie Multiplă":
     model_viral = sm.OLS(y_viral, X_viral).fit()
     st.text(str(model_viral.summary()))
 
+    st.divider(width="stretch")
+
     st.markdown("""
+    **Interpretarea comparativă a coeficienților**
     1. **Interept**: 
     - Piața Normală (const = 8.75): Un curs standard pornește de la o bază de abonați rezonabilă.
     - Piața Virală (const = 10.62): Baza de pornire în piața virală este semnificativ mai mare. Un curs care devine viral pornește din start cu un volum masiv de abonați, independent de ceilalți predictori.
@@ -808,12 +803,13 @@ elif sectiune == "Modelele de Regresie Multiplă":
         R² (R squared):   {r2:.4f}
                 """)
 
+    st.divider(width="stretch")
     calcul_predictie(df_norm_scaled, "Piața Normală")
     st.markdown("""
     Atât pentru predicția pe setul de train, cât și pentru cea pentru setul de test, punctele formează o bandă aproape verticală în jurul punctelor 7 și 8,
     adică modelul oferă cam aceeași predicție, (în jur de e^7, adică aproximativ 1100 sau e^8 adică aproximativ 2980 abonați), deși în realitate variază mai mult.
     Acest lucru înseamnă că predictorii folosiți nu sunt îndeajuns pentru a genera rezultate apropiate de realitate.""")
-    st.markdown("---")
+
     calcul_predictie(df_vir_scaled, "Piața Virală")
     st.markdown("""
     Spre deosebire de piața cursuilor normale, în piața virală predicțiile, atât cele de train, cât și de test, sunt mai bune, deci
@@ -821,6 +817,11 @@ elif sectiune == "Modelele de Regresie Multiplă":
       Comparativ cu piața normală, erorile s-au înjumătățit.
     """)
 
+    st.divider(width="stretch")
+    st.header("Clusterizarea")
+    st.write("Pentru cursurile de pe piața normală a fost aplicată și o Clusterizare în funcție de numărul de recenzii lăsate și de vechimea cursului.")
+    st.write("Pentru a aplica acest algoritm este nevoie ca mai întâi să determinăm numărul optim de clustere, iar pentru a realiza acest lucru "
+             "se va folosi **Elbow Method**.")
 
 
     from sklearn.cluster import KMeans
@@ -838,7 +839,7 @@ elif sectiune == "Modelele de Regresie Multiplă":
         kmeans.fit(X)
         wcss.append(kmeans.inertia_)
 
-    st.write("1. Determinarea numărului optim de clustere")
+    st.write("**1. Determinarea numărului optim de clustere**")
     fig_elbow, ax_elbow = plt.subplots(figsize=(10, 5))
     sns.lineplot(x=range(1, 11), y=wcss, marker='o', color='red', ax=ax_elbow)
     ax_elbow.set_title('Metoda Cotului')
@@ -852,8 +853,10 @@ elif sectiune == "Modelele de Regresie Multiplă":
 
     index_reviews = X_cols.index('num_reviews')
     index_age = X_cols.index('course_age_days')
+    st.write("Conform acestui grafic, numărul optim de clustere ar fi 4 sau 5. Pentru Clusterizare am mers mai departe cu K=4.")
 
-    st.write(f"2. Vizualizarea Clusterelor (K = {num_clustere_ales})")
+
+    st.write(f"**2. Vizualizarea Clusterelor (K = {num_clustere_ales})**")
     fig_scatter, ax_scatter = plt.subplots(figsize=(15, 7))
 
     sns.scatterplot(x=X[y_kmeans == 0, index_reviews], y=X[y_kmeans == 0, index_age], color='yellow',
@@ -878,28 +881,16 @@ elif sectiune == "Modelele de Regresie Multiplă":
     st.pyplot(fig_scatter)
 
     st.markdown("""
-    **Cluster-ul galben** reprezintă cursurile care sunt de mult timp pe piață, dar au puține review-uri.
-    **Clusterele albastru și verde** reprezintă cursurile relativ noi, care nu au reușit să capete încă vizibilitate.
-    **Cluster-ul turcoaz** reprezintă cursurile foarte populare. Nu toate sunt cursuri vechi, însă acestea au explodat din punct de vedere al interacțiunii din partea utilizatorilor.
+    - **Cluster-ul galben** reprezintă cursurile care sunt de mult timp pe piață, dar au puține review-uri.
+    - **Clusterele albastru și verde** reprezintă cursurile relativ noi, care nu au reușit să capete încă vizibilitate.
+    - **Cluster-ul turcoaz** reprezintă cursurile foarte populare. Nu toate sunt cursuri vechi, însă acestea au explodat din punct de vedere al interacțiunii din partea utilizatorilor.
     """)
 
+    st.divider(width="stretch")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    st.write("**Concluzie generală**")
+    st.markdown("""
+    Compania de dezvoltare a educației ar trebui să lanseze un nou proiect în domeniul _Web Development_, întrucât acesta este foarte căutat pe platforma Udemy. Cei mai importanți factori de care trebuie să țină cont sunt _numărul de review-uri_ și _vechimea cursului_. 
+    Deși ele nu sunt în controlul direct al firmei, implementarea unor noi metode pentru sporirea dorinței utilizatorilor de a lăsa o opinie asupra cursului ar putea crește _vizibiliatea acestuia pe platformă_ 
+    și, consecutiv, creșterea numărului de abonați. În ceea ce privește nivelul, cursul de programare ar trebui să fie destinat persoanelor cu _orice nivel de cunoștințe_ sau cel puțin _începătorilor_, deoarece în domeniul IT, oamenii accesibilitate mai mare la skill-urile de programare.
+    """)
